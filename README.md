@@ -1,9 +1,9 @@
 # Arca Backup (nome provisório)
 
-Painel web para acompanhar e operar o backup de computadores Windows para o Oracle Cloud Object Storage.
+Painel web para acompanhar e operar o backup de computadores Windows e servidores Linux para o Oracle Cloud Object Storage.
 
 - **Servidor (Linux):** hospeda o painel. O cliente instala em um servidor próprio.
-- **Agente (Windows):** instalado em cada computador que terá backup. Usa o rclone oficial, com o SHA256 conferido.
+- **Agente (Windows e Linux):** instalado em cada computador que terá backup. Usa o rclone oficial, com o SHA256 conferido.
 
 ## Requisitos do servidor
 
@@ -72,6 +72,37 @@ schtasks /delete /tn "Arca Agente" /f
 rmdir /s /q C:\Backup-OCI
 ```
 
+## Instalação nos servidores Linux (backup)
+
+1. No painel, em **Instalar em um computador**, clique em **Baixar para Linux**. Cada arquivo vale para um servidor, por 7 dias.
+2. Copie o arquivo para o servidor e execute como `root`:
+
+```
+sudo sh arca-instalador-linux.sh
+```
+
+O instalador pergunta o nome, as pastas, o horário e a chave de acesso. Também aceita tudo por opção:
+
+```
+sudo sh arca-instalador-linux.sh --nome srv-web --pastas "/etc,/home,/var/www" --horario 22:00 --access-key CHAVE --secret-key SEGREDO
+```
+
+- Requisitos: `curl` (ou `wget` com suporte a `--ca-certificate`), `unzip` (ou `bsdtar`/`python3`) e `sha256sum`.
+- Processadores: amd64, arm64, arm v7 e 386.
+- O rclone vem do site oficial (downloads.rclone.org; se não responder, a página oficial de versões no GitHub) e só é usado se o SHA256 conferir.
+- Instala em `/opt/arca-agente`; chave e configuração em `/etc/arca-agente`, acessíveis só pelo `root`; registros em `/var/log/arca-agente`.
+- Agenda com systemd (`arca-backup.timer` e `arca-agente.timer`) ou, sem systemd, com cron.
+- Links simbólicos são guardados como links. Arquivos abertos são copiados como estão: para bancos de dados, gere uma exportação antes, colocando um script executável em `/etc/arca-agente/antes-do-backup.sh`.
+- Para trocar o nome do servidor no painel, baixe um instalador novo.
+
+Comandos no servidor:
+
+| Ação | Comando |
+|---|---|
+| Rodar um backup agora | `sudo /opt/arca-agente/arca-agente.sh backup` |
+| Ver os agendamentos (systemd) | `systemctl list-timers 'arca-*'` |
+| Remover | `sudo /opt/arca-agente/arca-agente.sh desinstalar` |
+
 ## Recuperar a senha do admin pelo terminal
 
 ```
@@ -90,6 +121,7 @@ No segundo comando, digite a nova senha e pressione Enter. Ela aparece na tela d
 | `/opt/arca` | Programa |
 | `/var/lib/arca` | Dados, certificado, fuso e porta |
 | `/usr/local/bin/arca-atualizar` | Comando de atualização |
+
 
 ## Arquivos deste repositório
 
